@@ -1,0 +1,69 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+						http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+						http://www.springframework.org/schema/security
+						http://www.springframework.org/schema/security/spring-security-3.0.xsd">
+
+	<bean id="bimSecurityService" class="com.tracker.web.security.SecurityService">
+		<property name="bimBusinessLogic">
+			<ref bean="bimBusinessLogic" />
+		</property>
+	</bean>
+
+	<security:http access-denied-page="/taskTracker/error.html" auto-config="false" access-decision-manager-ref="urlAccessDecisionManager">
+		<security:session-management invalid-session-url="/taskTracker/sign-in.html">
+			<!-- <concurrency-control max-sessions="1"error-if-maximum-exceeded="true" /> -->
+		</security:session-management>
+		<security:form-login login-page="/taskTracker/sign-in.html" default-target-url="/taskTracker/welcome.html"
+			always-use-default-target="false" authentication-failure-url="/taskTracker/sign-in.html?error=1" />
+		<security:logout invalidate-session="true" logout-success-url="/taskTracker/sign-in.html" />
+		<security:intercept-url pattern="/taskTracker/sign-in.html*" filters="none" />
+		<security:intercept-url pattern="/taskTracker/welcome.html*" access="ADMIN_WELCOME"/>
+	</security:http>
+
+	<security:authentication-manager>
+		<security:authentication-provider
+			user-service-ref="bimSecurityService" />
+	</security:authentication-manager>
+
+	<bean id="roleVoter" class="org.springframework.security.access.vote.RoleVoter">
+		<property name="rolePrefix" value="ADMIN_"></property>
+	</bean>
+	
+	<bean id="urlAccessDecisionManager" class="org.springframework.security.access.vote.UnanimousBased">
+		<property name="decisionVoters">
+			<list>
+				<ref bean="roleVoter" />
+				<bean class="org.springframework.security.access.vote.AuthenticatedVoter" />
+				<ref bean="urlCustomVoter"/>
+			</list>
+		</property>
+	</bean>
+		
+	<bean id="urlCustomVoter" class="com.tracker.web.security.AdminURLDecisionVoter">
+		<property name="bimBusinessLogic">
+			<ref bean="bimBusinessLogic" />
+		</property>
+	</bean>
+ 
+	<bean id="accessDecisionManager" class="org.springframework.security.access.vote.UnanimousBased">
+		<property name="decisionVoters">
+			<list>
+				<ref bean="methodCustomVoter"/>
+				<ref bean="roleVoter" />
+				<bean class="org.springframework.security.access.vote.AuthenticatedVoter" />
+			</list>
+		</property>
+	</bean>	
+
+	<bean id="methodCustomVoter" class="com.tracker.web.security.AdminMethodDecisionVoter">
+<!-- 	 Not working when injecting this bean. Potential Bug in Spring Security
+	
+		<property name="businessLogic">
+			<ref bean="bimBusinessLogic"/>
+		</property> -->
+	
+	</bean>
+</beans> 
